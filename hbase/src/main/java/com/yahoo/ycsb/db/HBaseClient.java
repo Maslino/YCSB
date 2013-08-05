@@ -32,14 +32,8 @@ import java.util.*;
 import com.yahoo.ycsb.measurements.Measurements;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.KeyValue;
-import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.*;
 //import org.apache.hadoop.hbase.client.Scanner;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
 //import org.apache.hadoop.hbase.io.Cell;
 //import org.apache.hadoop.hbase.io.RowResult;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -63,6 +57,7 @@ public class HBaseClient extends com.yahoo.ycsb.DB
 
     public int _scanCacheSize =2000;  //used in scan operation
     public long _writeBufferSize = 1024*1024*20L;
+    public Durability _walPolicy = Durability.SKIP_WAL;
 
     public static final int Ok=0;
     public static final int ServerError=-1;
@@ -99,6 +94,11 @@ public class HBaseClient extends com.yahoo.ycsb.DB
         String bufferSize = getProperties().getProperty("writebuffersize");
         if (bufferSize != null){
             _writeBufferSize = Long.valueOf(bufferSize);
+        }
+
+        if((getProperties().getProperty("skipwal") != null) &&
+                getProperties().getProperty("skipwal").equals("false")){
+            _walPolicy = Durability.USE_DEFAULT;
         }
     }
 
@@ -374,6 +374,7 @@ public class HBaseClient extends com.yahoo.ycsb.DB
             System.out.println("Setting up put for key: "+key);
         }
         Put p = new Put(Bytes.toBytes(key));
+        p.setDurability(_walPolicy);
         for (Map.Entry<String, ByteIterator> entry : values.entrySet())
         {
             if (_debug) {
