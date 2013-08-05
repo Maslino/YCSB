@@ -30,6 +30,32 @@
 
   <dependencies>
       <dependency>
+          <groupId>org.apache.zookeeper</groupId>
+          <artifactId>zookeeper</artifactId>
+          <version>3.4.3</version>
+          <exclusions>
+              <exclusion>
+                  <groupId>com.sun.jmx</groupId>
+                  <artifactId>jmxri</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>com.sun.jdmk</groupId>
+                  <artifactId>jmxtools</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>javax.jms</groupId>
+                  <artifactId>jms</artifactId>
+              </exclusion>
+          </exclusions>
+      </dependency>
+
+      <dependency>
+          <groupId>org.cloudera.htrace</groupId>
+          <artifactId>htrace</artifactId>
+          <version>1.5</version>
+      </dependency>
+
+      <dependency>
           <groupId>org.apache.hbase</groupId>
           <artifactId>hbase-client-0.95.1-hadoop-2.0</artifactId>
           <version>0.95.1</version>
@@ -64,11 +90,13 @@
           <artifactId>hbase-hadoop2-compat-0.95.1-hadoop-2.0</artifactId>
           <version>0.95.1</version>
       </dependency>
+
       <dependency>
           <groupId>org.apache.hadoop</groupId>
           <artifactId>hadoop-client</artifactId>
           <version>2.0.0-cdh4.3.0</version>
       </dependency>
+
     <dependency>
       <groupId>com.yahoo.ycsb</groupId>
       <artifactId>core</artifactId>
