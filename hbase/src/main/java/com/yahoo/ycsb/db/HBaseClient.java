@@ -21,7 +21,6 @@ package com.yahoo.ycsb.db;
 import com.yahoo.ycsb.DBException;
 import com.yahoo.ycsb.ByteIterator;
 import com.yahoo.ycsb.ByteArrayByteIterator;
-import com.yahoo.ycsb.StringByteIterator;
 
 import java.io.IOException;
 import java.util.*;
@@ -62,6 +61,9 @@ public class HBaseClient extends com.yahoo.ycsb.DB
     public String _columnFamily="";
     public byte _columnFamilyBytes[];
 
+    public int _scanCacheSize =2000;  //used in scan operation
+    public long _writeBufferSize = 1024*1024*20L;
+
     public static final int Ok=0;
     public static final int ServerError=-1;
     public static final int HttpError=-2;
@@ -89,6 +91,15 @@ public class HBaseClient extends com.yahoo.ycsb.DB
         }
       _columnFamilyBytes = Bytes.toBytes(_columnFamily);
 
+        String cacheSize = getProperties().getProperty("scancachesize");
+        if (cacheSize != null){
+            _scanCacheSize = Integer.valueOf(cacheSize);
+        }
+
+        String bufferSize = getProperties().getProperty("writebuffersize");
+        if (bufferSize != null){
+            _writeBufferSize = Long.valueOf(bufferSize);
+        }
     }
 
     /**
@@ -118,7 +129,7 @@ public class HBaseClient extends com.yahoo.ycsb.DB
             _hTable = new HTable(config, table);
             //2 suggestions from http://ryantwopointoh.blogspot.com/2009/01/performance-of-hbase-importing.html
             _hTable.setAutoFlush(false);
-            _hTable.setWriteBufferSize(1024*1024*12);
+            _hTable.setWriteBufferSize(_writeBufferSize);
             //return hTable;
         }
 
@@ -221,7 +232,8 @@ public class HBaseClient extends com.yahoo.ycsb.DB
         Scan s = new Scan(Bytes.toBytes(startkey));
         //HBase has no record limit.  Here, assume recordcount is small enough to bring back in one call.
         //We get back recordcount records
-        s.setCaching(recordcount);
+//        s.setCaching(recordcount);
+        s.setCaching(_scanCacheSize);
 
         //add specified fields or else all fields
         if (fields == null)
@@ -240,31 +252,77 @@ public class HBaseClient extends com.yahoo.ycsb.DB
         ResultScanner scanner = null;
         try {
             scanner = _hTable.getScanner(s);
-            int numResults = 0;
-            for (Result rr = scanner.next(); rr != null; rr = scanner.next())
-            {
-                //get row key
-                String key = Bytes.toString(rr.getRow());
-                if (_debug)
-                {
-                    System.out.println("Got scan result for key: "+key);
-                }
+            int times = recordcount / _scanCacheSize;
+            int remains = recordcount % _scanCacheSize;
+            for (int i = 0; i < times; i++) {
+                Result[] results = scanner.next(_scanCacheSize);
+                for(Result rr: results){
+                    //get row key
+                    String key = Bytes.toString(rr.getRow());
+                    if (_debug)
+                    {
+                        System.out.println("Got scan result for key: "+key);
+                    }
 
-                HashMap<String,ByteIterator> rowResult = new HashMap<String, ByteIterator>();
+                    HashMap<String,ByteIterator> rowResult = new HashMap<String, ByteIterator>();
 
-                for (KeyValue kv : rr.raw()) {
-                  rowResult.put(
-                      Bytes.toString(kv.getQualifier()),
-                      new ByteArrayByteIterator(kv.getValue()));
+                    for (KeyValue kv : rr.raw()) {
+                      rowResult.put(
+                          Bytes.toString(kv.getQualifier()),
+                          new ByteArrayByteIterator(kv.getValue()));
+                    }
+                    //add rowResult to result vector
+                    result.add(rowResult);
                 }
-                //add rowResult to result vector
-                result.add(rowResult);
-                numResults++;
-                if (numResults >= recordcount) //if hit recordcount, bail out
-                {
-                    break;
+            }
+
+            if (remains != 0){
+                Result[] results = scanner.next(remains);
+                for(Result rr: results){
+                    //get row key
+                    String key = Bytes.toString(rr.getRow());
+                    if (_debug)
+                    {
+                        System.out.println("Got scan result for key: "+key);
+                    }
+
+                    HashMap<String,ByteIterator> rowResult = new HashMap<String, ByteIterator>();
+
+                    for (KeyValue kv : rr.raw()) {
+                      rowResult.put(
+                          Bytes.toString(kv.getQualifier()),
+                          new ByteArrayByteIterator(kv.getValue()));
+                    }
+                    //add rowResult to result vector
+                    result.add(rowResult);
                 }
-            } //done with row
+            }
+
+//            int numResults = 0;
+//            for (Result rr = scanner.next(); rr != null; rr = scanner.next())
+//            {
+//                //get row key
+//                String key = Bytes.toString(rr.getRow());
+//                if (_debug)
+//                {
+//                    System.out.println("Got scan result for key: "+key);
+//                }
+//
+//                HashMap<String,ByteIterator> rowResult = new HashMap<String, ByteIterator>();
+//
+//                for (KeyValue kv : rr.raw()) {
+//                  rowResult.put(
+//                      Bytes.toString(kv.getQualifier()),
+//                      new ByteArrayByteIterator(kv.getValue()));
+//                }
+//                //add rowResult to result vector
+//                result.add(rowResult);
+//                numResults++;
+//                if (numResults >= recordcount) //if hit recordcount, bail out
+//                {
+//                    break;
+//                }
+//            } //done with row
 
         }
 
@@ -277,7 +335,9 @@ public class HBaseClient extends com.yahoo.ycsb.DB
         }
 
         finally {
-            scanner.close();
+            if(scanner != null){
+                scanner.close();
+            }
         }
 
         return Ok;
