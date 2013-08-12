@@ -168,12 +168,12 @@ public class HBaseClient extends com.yahoo.ycsb.DB
         System.out.println("Doing read from HBase columnfamily "+_columnFamily);
         System.out.println("Doing read for key: "+key);
         }
-            Get g = new Get(Bytes.toBytes(key));
+            Get g = new Get(Bytes.toBytes(Long.valueOf(key)));
           if (fields == null) {
             g.addFamily(_columnFamilyBytes);
           } else {
             for (String field : fields) {
-              g.addColumn(_columnFamilyBytes, Bytes.toBytes(field));
+              g.addColumn(_columnFamilyBytes, Bytes.toBytes(Integer.valueOf(field)));
             }
           }
             r = _hTable.get(g);
@@ -191,7 +191,8 @@ public class HBaseClient extends com.yahoo.ycsb.DB
 
   for (KeyValue kv : r.raw()) {
     result.put(
-        Bytes.toString(kv.getQualifier()),
+        String.valueOf(Bytes.toInt(kv.getQualifier())),
+//        Bytes.toString(kv.getQualifier()),
         new ByteArrayByteIterator(kv.getValue()));
     if (_debug) {
       System.out.println("Result for field: "+Bytes.toString(kv.getQualifier())+
@@ -229,7 +230,7 @@ public class HBaseClient extends com.yahoo.ycsb.DB
             }
         }
 
-        Scan s = new Scan(Bytes.toBytes(startkey));
+        Scan s = new Scan(Bytes.toBytes(Long.valueOf(startkey)));
         //HBase has no record limit.  Here, assume recordcount is small enough to bring back in one call.
         //We get back recordcount records
 //        s.setCaching(recordcount);
@@ -244,7 +245,7 @@ public class HBaseClient extends com.yahoo.ycsb.DB
         {
             for (String field : fields)
             {
-                s.addColumn(_columnFamilyBytes,Bytes.toBytes(field));
+                s.addColumn(_columnFamilyBytes,Bytes.toBytes(Integer.valueOf(field)));
             }
         }
 
@@ -258,7 +259,7 @@ public class HBaseClient extends com.yahoo.ycsb.DB
                 Result[] results = scanner.next(_scanCacheSize);
                 for(Result rr: results){
                     //get row key
-                    String key = Bytes.toString(rr.getRow());
+                    String key = String.valueOf(Bytes.toLong(rr.getRow()));
                     if (_debug)
                     {
                         System.out.println("Got scan result for key: "+key);
@@ -268,7 +269,8 @@ public class HBaseClient extends com.yahoo.ycsb.DB
 
                     for (KeyValue kv : rr.raw()) {
                       rowResult.put(
-                          Bytes.toString(kv.getQualifier()),
+                          String.valueOf(Bytes.toInt(kv.getQualifier())),
+//                          Bytes.toString(kv.getQualifier()),
                           new ByteArrayByteIterator(kv.getValue()));
                     }
                     //add rowResult to result vector
@@ -280,7 +282,7 @@ public class HBaseClient extends com.yahoo.ycsb.DB
                 Result[] results = scanner.next(remains);
                 for(Result rr: results){
                     //get row key
-                    String key = Bytes.toString(rr.getRow());
+                    String key = String.valueOf(Bytes.toLong(rr.getRow()));
                     if (_debug)
                     {
                         System.out.println("Got scan result for key: "+key);
@@ -290,7 +292,8 @@ public class HBaseClient extends com.yahoo.ycsb.DB
 
                     for (KeyValue kv : rr.raw()) {
                       rowResult.put(
-                          Bytes.toString(kv.getQualifier()),
+                          String.valueOf(Bytes.toInt(kv.getQualifier())),
+//                          Bytes.toString(kv.getQualifier()),
                           new ByteArrayByteIterator(kv.getValue()));
                     }
                     //add rowResult to result vector
@@ -373,7 +376,7 @@ public class HBaseClient extends com.yahoo.ycsb.DB
         if (_debug) {
             System.out.println("Setting up put for key: "+key);
         }
-        Put p = new Put(Bytes.toBytes(key));
+        Put p = new Put(Bytes.toBytes(Long.valueOf(key)));
         p.setDurability(_walPolicy);
         for (Map.Entry<String, ByteIterator> entry : values.entrySet())
         {
@@ -381,7 +384,7 @@ public class HBaseClient extends com.yahoo.ycsb.DB
                 System.out.println("Adding field/value " + entry.getKey() + "/"+
                   entry.getValue() + " to put request");
             }
-            p.add(_columnFamilyBytes,Bytes.toBytes(entry.getKey()),entry.getValue().toArray());
+            p.add(_columnFamilyBytes,Bytes.toBytes(Integer.valueOf(entry.getKey())),entry.getValue().toArray());
         }
 
         try
@@ -446,7 +449,7 @@ public class HBaseClient extends com.yahoo.ycsb.DB
             System.out.println("Doing delete for key: "+key);
         }
 
-        Delete d = new Delete(Bytes.toBytes(key));
+        Delete d = new Delete(Bytes.toBytes(Long.valueOf(key)));
         try
         {
             _hTable.delete(d);

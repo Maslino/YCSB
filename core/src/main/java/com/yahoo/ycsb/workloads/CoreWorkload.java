@@ -72,8 +72,9 @@ public class CoreWorkload extends Workload
 	 * The default name of the database table to run queries against.
 	 */
 	public static final String TABLENAME_PROPERTY_DEFAULT="usertable";
+    public static final String FIELD = "";
 
-	public static String table;
+    public static String table;
 
 
 	/**
@@ -425,14 +426,15 @@ public class CoreWorkload extends Workload
  		{
  			keynum=Utils.hash(keynum);
  		}
-		return "user"+keynum;
+//		return "user"+keynum;
+        return "" + keynum;
 	}
 	HashMap<String, ByteIterator> buildValues() {
  		HashMap<String,ByteIterator> values=new HashMap<String,ByteIterator>();
 
  		for (int i=0; i<fieldcount; i++)
  		{
- 			String fieldkey="field"+i;
+ 			String fieldkey= FIELD +i;
  			ByteIterator data= new RandomByteIterator(fieldlengthgenerator.nextInt());
  			values.put(fieldkey,data);
  		}
@@ -441,7 +443,7 @@ public class CoreWorkload extends Workload
 	HashMap<String, ByteIterator> buildUpdate() {
 		//update a random field
 		HashMap<String, ByteIterator> values=new HashMap<String,ByteIterator>();
-		String fieldname="field"+fieldchooser.nextString();
+		String fieldname=FIELD+fieldchooser.nextString();
 		ByteIterator data = new RandomByteIterator(fieldlengthgenerator.nextInt());
 		values.put(fieldname,data);
 		return values;
@@ -528,7 +530,7 @@ public class CoreWorkload extends Workload
 		if (!readallfields)
 		{
 			//read a random field  
-			String fieldname="field"+fieldchooser.nextString();
+			String fieldname=FIELD+fieldchooser.nextString();
 
 			fields=new HashSet<String>();
 			fields.add(fieldname);
@@ -549,7 +551,7 @@ public class CoreWorkload extends Workload
 		if (!readallfields)
 		{
 			//read a random field  
-			String fieldname="field"+fieldchooser.nextString();
+			String fieldname=FIELD+fieldchooser.nextString();
 
 			fields=new HashSet<String>();
 			fields.add(fieldname);
@@ -596,7 +598,7 @@ public class CoreWorkload extends Workload
 		if (!readallfields)
 		{
 			//read a random field  
-			String fieldname="field"+fieldchooser.nextString();
+			String fieldname=FIELD+fieldchooser.nextString();
 
 			fields=new HashSet<String>();
 			fields.add(fieldname);
